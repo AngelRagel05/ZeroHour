@@ -4,7 +4,8 @@ using UnityEngine;
 public class VagabundoController : MonoBehaviour
 {
     [Header("Movimiento")]
-    public float velocidad = 8f;
+    public float velocidadCaminar = 4.5f;
+    public float velocidadCorrer = 8f;
     public float aceleracionAire = 0.85f;
 
     [Header("Salto")]
@@ -21,11 +22,20 @@ public class VagabundoController : MonoBehaviour
     [Header("Ajustes")]
     public bool mostrarDebug = false;
 
+    [Header("Vacilar")]
+    public float duracionVacile = 0.45f;
+    public float cooldownVacile = 0.3f;
+
     private Rigidbody2D rb;
     private Animator anim;
 
     private float movH;
     private bool saltoSoltado;
+    private bool controlesBloqueados;
+    private bool estaMuerto;
+    private bool estaCorriendo;
+    private bool estaVacilando;
+    private float vacileDisponibleEn;
 
     private float coyoteCounter;
     private float jumpBufferCounter;
@@ -43,7 +53,14 @@ public class VagabundoController : MonoBehaviour
 
     private void Update()
     {
+        if (controlesBloqueados)
+        {
+            movH = 0f;
+            return;
+        }
+
         movH = LeerHorizontal();
+        estaCorriendo = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Mathf.Abs(movH) > 0.01f;
 
         if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space))
         {
@@ -55,13 +72,23 @@ public class VagabundoController : MonoBehaviour
             saltoSoltado = true;
         }
 
-        if (anim != null)
-        {
-            anim.SetFloat("Velocidad", Mathf.Abs(movH));
-        }
-
         if (movH > 0.01f) transform.localScale = new Vector3(1f, 1f, 1f);
         else if (movH < -0.01f) transform.localScale = new Vector3(-1f, 1f, 1f);
+
+        if (anim != null)
+        {
+            float velAbs = Mathf.Abs(rb.linearVelocity.x);
+            anim.SetFloat("Velocidad", velAbs);
+            anim.SetFloat("VelY", rb.linearVelocity.y);
+            anim.SetBool("EnSuelo", enSuelo);
+            anim.SetBool("Corriendo", estaCorriendo);
+            anim.SetBool("Muerto", estaMuerto);
+        }
+
+        if (Input.GetKeyDown(KeyCode.E) && PuedeVacilar())
+        {
+            StartCoroutine(HacerVacile());
+        }
 
         jumpBufferCounter -= Time.deltaTime;
     }
@@ -94,8 +121,9 @@ public class VagabundoController : MonoBehaviour
 
     private void AplicarMovimientoHorizontal()
     {
+        float velocidadActual = estaCorriendo ? velocidadCorrer : velocidadCaminar;
         float control = enSuelo ? 1f : aceleracionAire;
-        float targetSpeed = movH * velocidad;
+        float targetSpeed = movH * velocidadActual;
         float newVelX = Mathf.Lerp(rb.linearVelocity.x, targetSpeed, control);
         rb.linearVelocity = new Vector2(newVelX, rb.linearVelocity.y);
     }
@@ -127,6 +155,9 @@ public class VagabundoController : MonoBehaviour
 
     public void Respawn()
     {
+        estaMuerto = false;
+        controlesBloqueados = false;
+        if (anim != null) anim.SetBool("Muerto", false);
         rb.linearVelocity = Vector2.zero;
         transform.position = spawnPoint;
     }
@@ -136,6 +167,49 @@ public class VagabundoController : MonoBehaviour
         spawnPoint = newSpawn;
         transform.position = spawnPoint;
         rb.linearVelocity = Vector2.zero;
+    }
+
+    public void ReproducirDanio()
+    {
+        if (anim != null && !estaMuerto)
+        {
+            anim.SetTrigger("Hurt");
+        }
+    }
+
+    public void Morir()
+    {
+        estaMuerto = true;
+        controlesBloqueados = true;
+        rb.linearVelocity = Vector2.zero;
+        if (anim != null)
+        {
+            anim.SetBool("Muerto", true);
+            anim.SetTrigger("Dead");
+        }
+    }
+
+    private bool PuedeVacilar()
+    {
+        return enSuelo && !estaMuerto && !estaVacilando && Time.time >= vacileDisponibleEn && anim != null;
+    }
+
+    private System.Collections.IEnumerator HacerVacile()
+    {
+        estaVacilando = true;
+        controlesBloqueados = true;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        anim.SetTrigger("Vacilar");
+
+        yield return new WaitForSeconds(duracionVacile);
+
+        if (!estaMuerto)
+        {
+            controlesBloqueados = false;
+        }
+
+        estaVacilando = false;
+        vacileDisponibleEn = Time.time + cooldownVacile;
     }
 
     private static float LeerHorizontal()
