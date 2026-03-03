@@ -66,5 +66,6 @@
     "explorer.fileNesting.patterns": {
         "*.sln": "*.csproj",
     },
-    "dotnet.defaultSolution": "Game_2D.sln"
+    "dotnet.defaultSolution": "Game_2D.sln",
+    "chatgpt.openOnStartup": true
 }
