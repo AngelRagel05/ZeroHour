@@ -18,7 +18,7 @@ public class LavaHazard : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm != null)
         {
-            gm.DanoJugador(dano);
+            gm.DanoJugadorPorLava(dano, transform.position);
         }
     }
 }

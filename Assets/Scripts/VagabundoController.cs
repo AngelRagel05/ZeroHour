@@ -26,8 +26,15 @@ public class VagabundoController : MonoBehaviour
     public float duracionVacile = 0.45f;
     public float cooldownVacile = 0.3f;
 
+    [Header("Daño")]
+    public float empujeDanioX = 5.5f;
+    public float empujeDanioY = 3.5f;
+    public float bloqueoControlesDanio = 0.18f;
+    public float parpadeoDanioTiempo = 0.22f;
+
     private Rigidbody2D rb;
     private Animator anim;
+    private SpriteRenderer spriteRenderer;
 
     private float movH;
     private bool saltoSoltado;
@@ -36,24 +43,28 @@ public class VagabundoController : MonoBehaviour
     private bool estaCorriendo;
     private bool estaVacilando;
     private float vacileDisponibleEn;
+    private bool enDanio;
 
     private float coyoteCounter;
     private float jumpBufferCounter;
     private bool enSuelo;
 
+    private Vector3 spawnInicial;
     private Vector3 spawnPoint;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        spawnInicial = transform.position;
         spawnPoint = transform.position;
     }
 
     private void Update()
     {
-        if (controlesBloqueados)
+        if (controlesBloqueados || enDanio)
         {
             movH = 0f;
             return;
@@ -77,12 +88,13 @@ public class VagabundoController : MonoBehaviour
 
         if (anim != null)
         {
-            float velAbs = Mathf.Abs(rb.linearVelocity.x);
-            anim.SetFloat("Velocidad", velAbs);
-            anim.SetFloat("VelY", rb.linearVelocity.y);
-            anim.SetBool("EnSuelo", enSuelo);
-            anim.SetBool("Corriendo", estaCorriendo);
-            anim.SetBool("Muerto", estaMuerto);
+            float velAnim = Mathf.Max(Mathf.Abs(movH), Mathf.Abs(rb.linearVelocity.x));
+            SetFloatIfExists("Velocidad", velAnim);
+            SetFloatIfExists("VelY", rb.linearVelocity.y);
+            SetBoolIfExists("EnSuelo", enSuelo);
+            SetBoolIfExists("Corriendo", estaCorriendo);
+            SetBoolIfExists("Muerto", estaMuerto);
+            SetBoolIfExists("Muerte", estaMuerto);
         }
 
         if (Input.GetKeyDown(KeyCode.E) && PuedeVacilar())
@@ -107,7 +119,17 @@ public class VagabundoController : MonoBehaviour
     {
         if (groundCheck != null)
         {
-            enSuelo = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+            enSuelo = false;
+            Collider2D[] hits = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius, groundLayer);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                // Ignora el propio jugador para no detectar suelo falso.
+                if (hits[i] != null && hits[i].attachedRigidbody != rb)
+                {
+                    enSuelo = true;
+                    break;
+                }
+            }
         }
         else
         {
@@ -157,24 +179,54 @@ public class VagabundoController : MonoBehaviour
     {
         estaMuerto = false;
         controlesBloqueados = false;
-        if (anim != null) anim.SetBool("Muerto", false);
+        enDanio = false;
+        if (anim != null)
+        {
+            SetBoolIfExists("Muerto", false);
+            SetBoolIfExists("Muerte", false);
+        }
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.white;
+        }
         rb.linearVelocity = Vector2.zero;
         transform.position = spawnPoint;
     }
 
     public void ForzarSpawnInicial(Vector3 newSpawn)
     {
+        spawnInicial = newSpawn;
         spawnPoint = newSpawn;
         transform.position = spawnPoint;
         rb.linearVelocity = Vector2.zero;
+    }
+
+    public void RespawnAlInicio()
+    {
+        spawnPoint = spawnInicial;
+        Respawn();
     }
 
     public void ReproducirDanio()
     {
         if (anim != null && !estaMuerto)
         {
-            anim.SetTrigger("Hurt");
+            SetTriggerIfExists("Hurt");
         }
+    }
+
+    public void AplicarEmpujeDanio(Vector2 fuenteDanio)
+    {
+        if (estaMuerto) return;
+
+        ReproducirDanio();
+        StopCoroutine(nameof(CorutinaDanioVisual));
+        StartCoroutine(CorutinaDanioVisual());
+
+        float dir = Mathf.Sign(((Vector2)transform.position - fuenteDanio).x);
+        if (Mathf.Approximately(dir, 0f)) dir = transform.localScale.x >= 0f ? 1f : -1f;
+        rb.linearVelocity = new Vector2(dir * empujeDanioX, empujeDanioY);
+        StartCoroutine(CorutinaBloqueoDanio());
     }
 
     public void Morir()
@@ -184,8 +236,9 @@ public class VagabundoController : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         if (anim != null)
         {
-            anim.SetBool("Muerto", true);
-            anim.SetTrigger("Dead");
+            SetBoolIfExists("Muerto", true);
+            SetBoolIfExists("Muerte", true);
+            SetTriggerIfExists("Dead");
         }
     }
 
@@ -199,7 +252,7 @@ public class VagabundoController : MonoBehaviour
         estaVacilando = true;
         controlesBloqueados = true;
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-        anim.SetTrigger("Vacilar");
+        SetTriggerIfExists("Vacilar");
 
         yield return new WaitForSeconds(duracionVacile);
 
@@ -212,6 +265,38 @@ public class VagabundoController : MonoBehaviour
         vacileDisponibleEn = Time.time + cooldownVacile;
     }
 
+    private System.Collections.IEnumerator CorutinaBloqueoDanio()
+    {
+        enDanio = true;
+        controlesBloqueados = true;
+        yield return new WaitForSeconds(bloqueoControlesDanio);
+        enDanio = false;
+        if (!estaMuerto && !estaVacilando)
+        {
+            controlesBloqueados = false;
+        }
+    }
+
+    private System.Collections.IEnumerator CorutinaDanioVisual()
+    {
+        if (spriteRenderer == null) yield break;
+
+        Color original = Color.white;
+        Color golpe = new Color(1f, 0.45f, 0.45f, 1f);
+        float t = 0f;
+
+        while (t < parpadeoDanioTiempo)
+        {
+            spriteRenderer.color = golpe;
+            yield return new WaitForSeconds(0.05f);
+            spriteRenderer.color = original;
+            yield return new WaitForSeconds(0.05f);
+            t += 0.1f;
+        }
+
+        spriteRenderer.color = original;
+    }
+
     private static float LeerHorizontal()
     {
         float h = 0f;
@@ -219,6 +304,44 @@ public class VagabundoController : MonoBehaviour
         if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) h += 1f;
         if (Mathf.Approximately(h, 0f)) h = Input.GetAxisRaw("Horizontal");
         return Mathf.Clamp(h, -1f, 1f);
+    }
+
+    private void SetBoolIfExists(string param, bool value)
+    {
+        if (HasParameter(param, AnimatorControllerParameterType.Bool))
+        {
+            anim.SetBool(param, value);
+        }
+    }
+
+    private void SetFloatIfExists(string param, float value)
+    {
+        if (HasParameter(param, AnimatorControllerParameterType.Float))
+        {
+            anim.SetFloat(param, value);
+        }
+    }
+
+    private void SetTriggerIfExists(string param)
+    {
+        if (HasParameter(param, AnimatorControllerParameterType.Trigger))
+        {
+            anim.SetTrigger(param);
+        }
+    }
+
+    private bool HasParameter(string param, AnimatorControllerParameterType type)
+    {
+        if (anim == null) return false;
+        AnimatorControllerParameter[] parameters = anim.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            if (parameters[i].name == param && parameters[i].type == type)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void OnDrawGizmosSelected()

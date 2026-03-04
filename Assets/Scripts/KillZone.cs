@@ -18,7 +18,7 @@ public class KillZone : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm != null)
         {
-            gm.DanoJugador(dano);
+            gm.DanoJugador(dano, transform.position);
         }
     }
 }
