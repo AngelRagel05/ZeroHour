@@ -1,5 +1,20 @@
 # ZeroHour
 
+## Como jugar (desde GitHub)
+
+### Opcion 1: jugar el ejecutable (recomendado)
+1. Descarga este repositorio en `.zip` desde GitHub y extraelo.
+2. Entra en la carpeta de build de Windows (por ejemplo `Builds/Windows`, si esta incluida en el repo/release).
+3. Ejecuta `ZeroHour.exe`.
+4. No separes el `.exe` de su carpeta `*_Data`.
+
+### Opcion 2: abrir y jugar desde Unity
+1. Descarga este repositorio en `.zip` y extraelo.
+2. Abre Unity Hub.
+3. `Open` -> selecciona la carpeta del proyecto.
+4. Abre la escena `Assets/Scenes/MainMenu.unity`.
+5. Pulsa `Play`.
+
 ZeroHour es un juego 2D de plataformas con estética retro en el que el objetivo es terminar el nivel antes de que el tiempo se agote, recogiendo llaves y evitando peligros del escenario.
 
 ## Estado del proyecto
