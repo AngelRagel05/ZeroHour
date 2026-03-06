@@ -1,80 +1,67 @@
 # ZeroHour
 
-## Como jugar (desde GitHub)
+Juego de plataformas 2D en Unity con enfoque dinámico: avanzar rápido, esquivar hazards y recoger llaves para completar el nivel.
 
-### Opcion 1: jugar el ejecutable (recomendado)
-1. Descarga este repositorio en `.zip` desde GitHub y extraelo.
-2. Entra en la carpeta de build de Windows (por ejemplo `Builds/Windows`, si esta incluida en el repo/release).
+## Autor
+
+- Desarrollado por: **Ángel Jiménez Ragel**
+- Correo: **jimenezragelangel@gmail.com**
+- Teléfono: **603758003**
+- GitHub: **https://github.com/AngelRagel05**
+
+## Cómo jugar desde GitHub
+
+### Opción 1: Ejecutable (recomendado)
+1. Descarga el repositorio en `.zip` desde GitHub y extráelo.
+2. Abre la carpeta de build de Windows (por ejemplo `Builds/Windows`, si está incluida en el repo o release).
 3. Ejecuta `ZeroHour.exe`.
-4. No separes el `.exe` de su carpeta `*_Data`.
+4. Mantén el `.exe` junto a su carpeta `*_Data`.
 
-### Opcion 2: abrir y jugar desde Unity
-1. Descarga este repositorio en `.zip` y extraelo.
-2. Abre Unity Hub.
-3. `Open` -> selecciona la carpeta del proyecto.
+### Opción 2: Jugar desde Unity
+1. Descarga el repositorio en `.zip` y extráelo.
+2. Abre Unity Hub y selecciona `Open`.
+3. Elige la carpeta del proyecto.
 4. Abre la escena `Assets/Scenes/MainMenu.unity`.
 5. Pulsa `Play`.
 
-ZeroHour es un juego 2D de plataformas con estética retro en el que el objetivo es terminar el nivel antes de que el tiempo se agote, recogiendo llaves y evitando peligros del escenario.
+## Resumen del proyecto
 
-## Estado del proyecto
+ZeroHour está construido como un nivel autónomo y jugable con flujo completo de partida:
+- inicio en `MainMenu`
+- gameplay en `SampleScene`
+- final en `Victory`
 
-Proyecto funcional en Unity con:
-- flujo completo de partida (jugar, pausar, ganar, reiniciar, volver al menú)
-- sistema de tiempo y ranking Top 5 persistente
-- audio dinámico con mezcla por tipo de sonido
-- menús estilizados y fondos temáticos personalizados
+Incluye HUD, sistema de tiempo, llaves coleccionables, pausa funcional, ranking persistente y audio configurable por canales.
 
-## Mecánicas principales
+## Características implementadas
 
-- Movimiento lateral con aceleración en suelo/aire
-- Salto con `coyote time`, `jump buffer` y `jump cut`
-- Detección robusta de suelo y paredes
-- Daño con empuje y feedback visual
-- Coleccionables tipo llave con contador en HUD
-- Generación de llaves desde Tilemap (`Tilemap_Coleccionables`)
+### Jugabilidad
+- Movimiento lateral fluido con físicas 2D.
+- Salto mejorado (`coyote time`, `jump buffer`, `jump cut`).
+- Hazards y daño con feedback visual.
+- Sistema de llaves como coleccionables.
+- Condición de victoria al completar objetivos del nivel.
 
-## Sistema de audio
+### UI y flujo de escenas
+- Menú principal estilizado.
+- HUD en partida con tiempo y contador de llaves.
+- Menú de pausa con `Continuar`, `Reiniciar`, `Salir` y `Sonido`.
+- Escena final de victoria.
+- Ranking Top 5 persistente para el podio final.
 
-### Clips y categorías
-- Música gameplay: `S_Background_00..03`
-- Música menú/pausa: `S_Pause`
-- Música victoria: `S_Victory`
-- SFX: salto, correr, daño, coleccionable
+### Audio
+- Playlist de música gameplay (`S_Background_00..03`) con selección aleatoria por partida.
+- Música de menú/pausa (`S_Pause`) y victoria (`S_Victory`).
+- SFX de salto, correr, daño y coleccionable.
+- Panel de sonido con control en tiempo real por canal.
+- Persistencia de volúmenes mediante `PlayerPrefs`.
 
-### Funcionalidad implementada
-- `BackgroundMusicPlayer` persistente entre escenas
-- Música aleatoria de gameplay por partida
-- Reglas por escena:
-  - `MainMenu`: reproduce clip de pausa
-  - `SampleScene`: reproduce playlist gameplay
-  - `Victory`: reproduce clip de victoria
-- Pausa/reanudación conservando posición de reproducción
-- Volumen en tiempo real y persistente por canal (PlayerPrefs)
-
-### Control de volumen en tiempo real
-Panel de sonido disponible en menús y pausa con sliders independientes:
-- Música
-- Salto
-- Correr
-- Daño
-- Victoria
-- Coleccionable
-- Pausa
-
-## UI y menús
-
-- HUD in-game con tiempo, llaves y estados
-- Menú de pausa con acciones:
-  - Continuar
-  - Reiniciar
-  - Salir
-  - Sonido
-- Menú principal y pantalla de victoria estilizados
-- Fondos temáticos incluidos:
+### Arte y presentación
+- Fondos temáticos por menú:
   - `Assets/Sprites/MenuBackgrounds/MainMenu_BG.png`
   - `Assets/Sprites/MenuBackgrounds/Pause_BG.png`
   - `Assets/Sprites/MenuBackgrounds/Victory_BG.png`
+- UI actualizada para mejorar legibilidad y presentación general.
 
 ## Escenas
 
@@ -82,18 +69,18 @@ Panel de sonido disponible en menús y pausa con sliders independientes:
 - `SampleScene`
 - `Victory`
 
-La escena `GameOver` fue retirada del build por no uso.
+La escena `GameOver` fue retirada del proyecto por no uso.
 
-## Scripts clave
+## Scripts principales
 
-- `GameManager.cs`: estado global de partida, pausa, victoria, ranking, SFX
-- `BackgroundMusicPlayer.cs`: música por escena y continuidad de reproducción
-- `UIHUD.cs`: HUD, menús in-game, panel de sonido
-- `SimpleSceneMenu.cs`: menú principal/victoria y panel de sonido
-- `VagabundoController.cs`: control de personaje y salto
-- `Collectible.cs`: recogida de llaves
-- `Tilemap_Coleccionables.cs`: instanciación de llaves desde Tilemap
-- `AudioSettingsStore.cs`: persistencia de volúmenes
+- `GameManager.cs`: lógica central de partida, pausa, victoria, ranking y SFX.
+- `BackgroundMusicPlayer.cs`: control de música por escena y continuidad de reproducción.
+- `UIHUD.cs`: HUD in-game, pausa y panel de sonido.
+- `SimpleSceneMenu.cs`: control de botones de menú y navegación entre escenas.
+- `VagabundoController.cs`: control del personaje y mecánicas de movimiento/salto.
+- `Collectible.cs`: detección y recogida de llaves.
+- `Tilemap_Coleccionables.cs`: generación de coleccionables desde Tilemap.
+- `AudioSettingsStore.cs`: guardado/carga de volúmenes de audio.
 
 ## Controles
 
@@ -102,12 +89,12 @@ La escena `GameOver` fue retirada del build por no uso.
 - Correr: `Shift`
 - Pausa: `Esc`
 
-## Requisitos
+## Requisitos técnicos
 
-- Unity `6.2` (proyecto migrado en entorno Unity 6)
+- Unity `6.2` (Unity 6 LTS)
 
 ## Notas de configuración
 
-- Verificar referencias de `AudioSource` y `AudioClip` en `GameManager` y `MusicPlayer`
-- Asignar fondos en menús (Canvas > Image a pantalla completa)
-- Si no existe `MusicPlayer` en `MainMenu`, `SimpleSceneMenu` puede crearlo automáticamente
+- Revisar referencias de `AudioSource` y `AudioClip` en `GameManager` y `MusicPlayer`.
+- Verificar que cada Canvas de menú tenga su fondo asignado.
+- Si `MusicPlayer` no existe en `MainMenu`, `SimpleSceneMenu` puede crearlo automáticamente.
