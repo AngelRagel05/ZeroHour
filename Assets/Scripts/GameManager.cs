@@ -35,6 +35,7 @@ public class GameManager : MonoBehaviour
     public AudioSource sfxSource;
     public AudioSource pausaSource;
     public AudioSource saltoSource;
+    public AudioSource coleccionableSource;
     public AudioClip saltoSfx;
     public AudioClip correrSfx;
     public AudioClip danoSfx;
@@ -73,6 +74,7 @@ public class GameManager : MonoBehaviour
     private int coleccionablesRecogidos;
     private float tiempoFinalRun;
     private BackgroundMusicPlayer backgroundMusicPlayer;
+    private AudioSource coleccionableRuntimeSource;
     private float pausaSfxTime;
     private bool hasPausaSfxTime;
     private bool mostrarPanelSonidoFallback;
@@ -180,7 +182,7 @@ public class GameManager : MonoBehaviour
     {
         if (nivelTerminado) return;
         coleccionablesRecogidos = Mathf.Min(coleccionablesRecogidos + 1, TotalColeccionablesNivel);
-        PlaySfx(coleccionableSfx, volumenColeccionable);
+        PlayColeccionableSfx();
     }
 
     public void ConfigurarTotalColeccionablesNivel(int total)
@@ -505,6 +507,37 @@ public class GameManager : MonoBehaviour
         float inicio = Mathf.Clamp(danoSfxInicio, 0f, Mathf.Max(0f, clipLength - 0.01f));
         float fin = Mathf.Clamp(danoSfxFin, inicio + 0.01f, clipLength);
         StartCoroutine(ReproducirSegmentoDano(inicio, fin, Mathf.Clamp01(volumenDanio)));
+    }
+
+    private void PlayColeccionableSfx()
+    {
+        if (coleccionableSfx == null) return;
+
+        AudioSource src = ObtenerColeccionableSource();
+        if (src == null) return;
+
+        src.PlayOneShot(coleccionableSfx, Mathf.Clamp01(volumenColeccionable));
+    }
+
+    private AudioSource ObtenerColeccionableSource()
+    {
+        if (coleccionableSource != null) return coleccionableSource;
+        if (coleccionableRuntimeSource != null) return coleccionableRuntimeSource;
+
+        GameObject go = new GameObject("SFX_Coleccionable_Runtime");
+        go.transform.SetParent(transform, false);
+        coleccionableRuntimeSource = go.AddComponent<AudioSource>();
+
+        if (sfxSource != null)
+        {
+            CopiarAjustesAudioSource(sfxSource, coleccionableRuntimeSource);
+        }
+
+        // Coleccionables deben oirse siempre, sin atenuacion 3D.
+        coleccionableRuntimeSource.spatialBlend = 0f;
+        coleccionableRuntimeSource.playOnAwake = false;
+        coleccionableRuntimeSource.loop = false;
+        return coleccionableRuntimeSource;
     }
 
     private IEnumerator ReproducirSegmentoDano(float inicio, float fin, float volumen)
